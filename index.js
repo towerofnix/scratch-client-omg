@@ -149,16 +149,6 @@ function postComment({pageType, pageId, content, us, commenteeId = '', parent = 
   })
 }
 
-function showComments(comments) {
-  for (const comment of comments) {
-    console.log(showOneComment(comment))
-    for (const reply of comment.replies) {
-      console.log('-', showOneComment(reply))
-    }
-    console.log('')
-  }
-}
-
 function showOneComment({ author, content }) {
   return `\x1b[1m${author}:\x1b[0m ${content}`
 }
