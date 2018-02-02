@@ -150,7 +150,8 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
       '' +
       (currentComment.next ? 'n' : '') +
       (currentComment.previous ? 'p' : '') +
-      (currentComment.replies && currentComment.replies.length ? 'iI' : '') +
+      (currentComment.replies && currentComment.replies.length ? 'i' +
+        (currentComment.replies.length > 1 ? 'I' : '') : '') +
       (currentComment.parent ? 'o' : '') +
       (us ? 'r' : '')
     )
