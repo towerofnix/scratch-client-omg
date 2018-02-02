@@ -158,6 +158,11 @@ function trimWhitespace(string) {
 }
 
 async function browseComments({rl, us, pageType, pageId}, comments) {
+  if (comments.length === 0) {
+    console.log('There are no comments on this.')
+    return
+  }
+
   let currentComment = comments[0]
 
   let quit = false
