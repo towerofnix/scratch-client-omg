@@ -436,8 +436,11 @@ async function main() {
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
   // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
-  // await browseProfile({rl, us}, await getProfile(pageId))
-  await browseProject({rl, us}, await getProject(pageId))
+  if (pageType === 'user') {
+    await browseProfile({rl, us}, await getProfile(pageId))
+  } else if (pageType === 'project') {
+    await browseProject({rl, us}, await getProject(pageId))
+  }
   rl.close()
 }
 
