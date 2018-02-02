@@ -8,6 +8,18 @@ const Scratch = require('scratch-api')
 const scratch = 'https://scratch.mit.edu'
 const siteAPI = scratch + '/site-api'
 
+function clearBlankProperties(obj) {
+  const newObj = Object.assign({}, obj)
+
+  for (const [ prop, value ] of Object.entries(newObj)) {
+    if (typeof value === 'undefined') {
+      delete newObj[prop]
+    }
+  }
+
+  return newObj
+}
+
 function login() {
   return new Promise((resolve, reject) => {
     Scratch.UserSession.load(function(err, user) {
@@ -20,12 +32,22 @@ function login() {
   })
 }
 
-function choose(rl, letters) {
+function choose(rl, choiceDict) {
   return new Promise(resolve => {
+    const keys = Object.keys(choiceDict)
+    const promptString = (
+      '[' +
+      (keys.every(k => k.length === 1) ? keys.join('') : keys.reduce((acc, key) => {
+        return acc + '|' + key
+      })) +
+      '] '
+    )
+
     const recursive = function() {
-      rl.question(`[${letters}] `, answer => {
-        if (answer.length === 1 && letters.includes(answer)) {
-          resolve(answer)
+      rl.question(promptString, answer => {
+        if (keys.includes(answer)) {
+          const choice = choiceDict[answer]
+          resolve(choice.action(answer))
         } else {
           recursive()
         }
@@ -57,13 +79,11 @@ function parseComments(html) {
     const commentEl = $(threadEl).find('> .comment')
     const comment = parseCommentEl(commentEl, {$})
     Object.assign(comment, {
-      isReply: false,
-      replyId: comment.id,
+      threadTopComment: comment,
       replies: setupNextPreviousLinks($(threadEl).find('.reply .comment').map(
         (i, replyEl) => Object.assign(parseCommentEl(replyEl, {$}), {
-          isReply: true,
           parent: comment,
-          replyId: comment.id
+          threadTopComment: comment
         })
       ).get())
     })
@@ -94,10 +114,14 @@ function setupNextPreviousLinks(comments) {
   return comments
 }
 
-function postComment({pageType, pageId, content, us, commenteeId = '', parentId = ''}) {
+function postComment({pageType, pageId, content, us, commenteeId = '', parent = null}) {
   return fetch(`${siteAPI}/comments/${pageType}/${pageId}/add/`, {
     method: 'POST',
-    body: JSON.stringify({content, commentee_id: commenteeId, parent_id: parentId}),
+    body: JSON.stringify({
+      content,
+      commentee_id: commenteeId,
+      parent_id: parent ? parent.id : undefined
+    }),
     headers: {
       'Cookie': `scratchsessionsid=${us.sessionId}; scratchcsrftoken=a;`,
       'X-CSRFToken': 'a',
@@ -107,7 +131,12 @@ function postComment({pageType, pageId, content, us, commenteeId = '', parentId 
     if (res.status === 200) {
       return res.text().then(text => {
         const $ = cheerio.load(text)
-        return parseCommentEl($('.comment'), {$})
+        const comment = parseCommentEl($('.comment'), {$})
+        Object.assign(comment, clearBlankProperties({
+          parent: parent ? parent : undefined,
+          threadTopComment: parent ? parent : comment
+        }))
+        return comment
       })
     } else {
       throw new Error(res.status)
@@ -147,46 +176,65 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
       }
     }
 
-    const choice = await choose(rl,
-      '' +
-      (currentComment.next ? 'n' : '') +
-      (currentComment.previous ? 'p' : '') +
-      (currentComment.replies && currentComment.replies.length ? 'i' +
-        (currentComment.replies.length > 1 ? 'I' : '') : '') +
-      (currentComment.parent ? 'o' : '') +
-      (us ? 'r' : '')
-    )
+    const choice = await choose(rl, clearBlankProperties({
+      n: currentComment.next ? {
+        action: () => {
+          currentComment = currentComment.next
+        }
+      } : undefined,
 
-    if (choice === 'n') {
-      currentComment = currentComment.next
-    } else if (choice === 'p') {
-      currentComment = currentComment.previous
-    } else if (choice === 'i') {
-      currentComment = currentComment.replies[0]
-    } else if (choice === 'I') {
-      currentComment = currentComment.replies[currentComment.replies.length - 1]
-    } else if (choice === 'o') {
-      currentComment = currentComment.parent
-    } else if (choice === 'r') reply: {
-      const message = await prompt(rl, 'Reply with: ')
-      if (message.length > 500) {
-        console.log('Message too long (> 500 characters).')
-        break reply
-      }
-      if (message.trim().length === 0) {
-        console.log('Not sending reply (empty input).')
-        break reply
-      }
-      const reply = await postComment({pageType, pageId, us,
-        content: message,
-        commenteeId: currentComment.authorId,
-        parentId: currentComment.replyId
-      })
-      const replies = currentComment.parent ? currentComment.parent.replies : currentComment.replies
-      replies.push(reply)
-      currentComment = reply
-      setupNextPreviousLinks(replies)
-    }
+      p: currentComment.previous ? {
+        action: () => {
+          currentComment = currentComment.previous
+        }
+      } : undefined,
+
+      i: currentComment.replies ? {
+        action: () => {
+          currentComment = currentComment.replies[0]
+        }
+      } : undefined,
+
+      I: currentComment.replies && currentComment.replies.length > 1 ? {
+        action: () => {
+          currentComment = currentComment.replies[currentComment.replies.length - 1]
+        }
+      } : undefined,
+
+      o: currentComment.parent ? {
+        action: () => {
+          currentComment = currentComment.parent
+        }
+      } : undefined,
+
+      r: us ? {
+        action: async () => {
+          const message = await prompt(rl, 'Reply with: ')
+
+          if (message.length > 500) {
+            console.log('Message too long (> 500 characters).')
+            return
+          }
+
+          if (message.trim().length === 0) {
+            console.log('Not sending reply (empty input).')
+            return
+          }
+
+          const reply = await postComment({pageType, pageId, us,
+            content: message,
+            commenteeId: currentComment.authorId,
+            parent: currentComment.threadTopComment
+          })
+
+          const replies = currentComment.parent ? currentComment.parent.replies : currentComment.replies
+          replies.push(reply)
+          setupNextPreviousLinks(replies)
+
+          currentComment = reply
+        }
+      } : undefined
+    }))
   }
 }
 
@@ -239,8 +287,8 @@ async function main() {
 
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
-  // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
-  await browseProfile({rl, us}, await getProfile('_nix'))
+  await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
+  // await browseProfile({rl, us}, await getProfile('_nix'))
 }
 
 main().catch(err => console.error(err))
