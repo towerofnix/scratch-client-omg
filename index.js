@@ -301,13 +301,26 @@ async function browseProfile({rl, us}, profile) {
     console.log(`\x1b[1mAbout me:\x1b[0m ${profile.aboutMe}`)
     console.log(`\x1b[1mWhat I'm working on:\x1b[0m ${profile.wiwo}`)
 
-    await choose(rl, {
+    if (profile.featuredProject) {
+      console.log(
+        `\x1b[1m${profile.featuredProjectHeading}:\x1b[0m` +
+        ` \x1b[33m${profile.featuredProject.name}\x1b[0m`)
+    }
+
+    await choose(rl, clearBlankProperties({
       q: {
         help: 'Quit browsing this profile.',
         action: async () => {
           quit = true
         }
       },
+
+      f: profile.featuredProject ? {
+        help: 'Browse this user\'s featurd project.',
+        action: async () => {
+          await browseProject({rl, us}, await getProject(profile.featuredProject.id))
+        }
+      } : undefined,
 
       c: {
         help: 'Browse comments.',
@@ -318,7 +331,7 @@ async function browseProfile({rl, us}, profile) {
           )
         }
       }
-    })
+    }))
   }
 }
 
