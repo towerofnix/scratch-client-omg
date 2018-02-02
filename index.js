@@ -199,7 +199,7 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
         }
       } : undefined,
 
-      i: currentComment.replies ? {
+      i: currentComment.replies.length ? {
         help: 'View replies.',
         action: () => {
           currentComment = currentComment.replies[0]
