@@ -225,6 +225,13 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
         }
       } : undefined,
 
+      p: {
+        help: 'Browse the profile of the author of this comment.',
+        action: async () => {
+          await browseProfile({rl, us}, await getProfile(currentComment.author))
+        }
+      },
+
       r: us ? {
         help: 'Reply to this comment.',
         action: async () => {
