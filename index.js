@@ -5,7 +5,8 @@ const cheerio = require('cheerio')
 const readline = require('readline')
 const Scratch = require('scratch-api')
 
-const siteAPI = 'https://scratch.mit.edu/site-api'
+const scratch = 'https://scratch.mit.edu'
+const siteAPI = scratch + '/site-api'
 
 function login() {
   return new Promise((resolve, reject) => {
@@ -189,6 +190,35 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
   }
 }
 
+async function getProfile(username) {
+  return fetch(`${scratch}/users/${username}`)
+    .then(res => res.text())
+    .then(html => parseProfile(html))
+}
+
+function parseProfile(html) {
+  const $ = cheerio.load(html)
+
+  return {
+    username: $('#profile-data h2').text(),
+    rank: $('#profile-data .group').text().trim(),
+    location: $('#profile-data .location').text(),
+    joinDate: new Date($('span[title]').attr('title')),
+    aboutMe: $('#bio-readonly .overview').text(),
+    wiwo: $('#status-readonly .overview').text(),
+    featuredProjectHeading: $('.featured-project-heading').text(),
+    featuredProject: {
+      name: $('.player a.project-name').text(),
+      id: parseInt($('.player a.project-name').attr('href').match(/([0-9]+)/)[1])
+    },
+    projectCount: $('.box-head:has(a[href*=projects]) h4').text()
+  }
+}
+
+async function browseProfile({rl, us}, profile) {
+  console.log(profile)
+}
+
 async function main() {
   let us
 
@@ -209,7 +239,8 @@ async function main() {
 
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
-  await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
+  // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
+  await browseProfile({rl, us}, await getProfile('_nix'))
 }
 
 main().catch(err => console.error(err))
