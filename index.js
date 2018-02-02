@@ -268,20 +268,27 @@ function getProfile(username) {
 function parseProfile(html) {
   const $ = cheerio.load(html)
 
-  return {
+  const profile = {
     username: $('#profile-data h2').text(),
     rank: $('#profile-data .group').text().trim(),
     location: $('#profile-data .location').text(),
     joinDate: new Date($('span[title]').attr('title')),
     aboutMe: $('#bio-readonly .overview').text(),
     wiwo: $('#status-readonly .overview').text(),
-    featuredProjectHeading: $('.featured-project-heading').text(),
-    featuredProject: {
-      name: $('.player a.project-name').text(),
-      id: parseInt($('.player a.project-name').attr('href').match(/([0-9]+)/)[1])
-    },
     projectCount: $('.box-head:has(a[href*=projects]) h4').text()
   }
+
+  if ($('.player a.project-name').length && $('.player a.project-name').text().trim().length) {
+    profile.featuredProjectHeading = $('.featured-project-heading').text()
+    profile.featuredProject = {
+      name: $('.player a.project-name').text(),
+      id: parseInt($('.player a.project-name').attr('href').match(/([0-9]+)/)[1])
+    }
+  } else {
+    profile.featuredProjectHeading = profile.featuredProject = null
+  }
+
+  return profile
 }
 
 async function browseProfile({rl, us}, profile) {
