@@ -395,6 +395,13 @@ async function browseProject({rl, us}, project) {
         }
       } : undefined,
 
+      a: {
+        help: 'Browse the profile of the author of this project.',
+        action: async () => {
+          await browseProfile({rl, us}, await getProfile(project.author))
+        }
+      },
+
       c: {
         help: 'Browse comments.',
         action: async () => {
