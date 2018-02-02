@@ -1,0 +1,21 @@
+{
+  "name": "scratch-client-omg",
+  "version": "1.0.0",
+  "description": "Not-so-powerful terminal client for Scratch community website",
+  "main": "index.js",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "node-fetch": "^1.7.3",
+    "scratch-api": "^1.1.8"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/towerofnix/scratch-client-omg.git"
+  },
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/towerofnix/scratch-client-omg/issues"
+  },
+  "homepage": "https://github.com/towerofnix/scratch-client-omg#readme"
+}
