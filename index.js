@@ -172,7 +172,7 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
       }
     }
 
-    const choice = await choose(rl, clearBlankProperties({
+    await choose(rl, clearBlankProperties({
       q: {
         help: 'Quit browsing comments.',
         action: () => {
@@ -254,7 +254,7 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
   }
 }
 
-async function getProfile(username) {
+function getProfile(username) {
   return fetch(`${scratch}/users/${username}`)
     .then(res => res.text())
     .then(html => parseProfile(html))
@@ -310,6 +310,79 @@ async function browseProfile({rl, us}, profile) {
   }
 }
 
+function getProject(projectId) {
+  return fetch(`${scratch}/projects/${projectId}`)
+    .then(res => res.text())
+    .then(html => parseProject(html))
+}
+
+function parseProject(html) {
+  const $ = cheerio.load(html)
+
+  return {
+    id: $('#project').attr('data-project-id'),
+    title: $('#title').text(),
+    author: $('#owner').text(),
+    instructions: $('#instructions .overview').text().trim(),
+    notesAndCredits: $('#description .overview').text().trim()
+  }
+}
+
+async function browseProject({rl, us}, project) {
+  let quit = false, firstTime = true
+
+  const showNotes = () => {
+    if (project.instructions) {
+      console.log('\x1b[1mInstructions:\x1b[0m')
+      console.log(project.instructions)
+      console.log('')
+    }
+
+    if (project.notesAndCredits) {
+      console.log('\x1b[1mNotes and Credits:\x1b[0m')
+      console.log(project.notesAndCredits)
+      console.log('')
+    }
+  }
+
+  while (!quit) {
+    console.log(`\x1b[33m${project.title}\x1b[0m`)
+    console.log(`\x1b[2mby ${project.author}; id: ${project.id}\x1b[0m`)
+
+    if (firstTime) {
+      console.log('')
+      showNotes()
+      firstTime = false
+    }
+
+    await choose(rl, clearBlankProperties({
+      q: {
+        help: 'Quit browsing this project.',
+        action: () => {
+          quit = true
+        }
+      },
+
+      N: (project.instructions || project.notesAndCredits) ? {
+        help: 'View instructions and notes/credits.',
+        action: () => {
+          showNotes()
+        }
+      } : undefined,
+
+      c: {
+        help: 'Browse comments.',
+        action: async () => {
+          await browseComments(
+            {rl, us, pageType: 'project', pageId: project.id},
+            await getComments('project', project.id)
+          )
+        }
+      }
+    }))
+  }
+}
+
 async function main() {
   let us
 
@@ -331,7 +404,8 @@ async function main() {
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
   // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
-  await browseProfile({rl, us}, await getProfile(pageId))
+  // await browseProfile({rl, us}, await getProfile(pageId))
+  await browseProject({rl, us}, await getProject(pageId))
   rl.close()
 }
 
