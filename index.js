@@ -207,8 +207,9 @@ async function main() {
     input: process.stdin, output: process.stdout
   })
 
-  const page = 'bharvey'
-  await browseComments({rl, us, pageType: 'user', pageId: page}, await getComments('user', page))
+  const pageId = process.argv[2] || '_nix'
+  const pageType = process.argv[3] || 'user'
+  await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
 }
 
 main().catch(err => console.error(err))
