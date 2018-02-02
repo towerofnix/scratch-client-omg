@@ -45,7 +45,12 @@ function choose(rl, choiceDict) {
 
     const recursive = function() {
       rl.question(promptString, answer => {
-        if (keys.includes(answer)) {
+        if (answer === '?') {
+          for (const [ key, { help } ] of Object.entries(choiceDict)) {
+            console.log(`- \x1b[34;1m${key}:\x1b[0m ${help}`)
+          }
+          recursive()
+        } else if (keys.includes(answer)) {
           const choice = choiceDict[answer]
           resolve(choice.action(answer))
         } else {
@@ -165,7 +170,8 @@ function trimWhitespace(string) {
 async function browseComments({rl, us, pageType, pageId}, comments) {
   let currentComment = comments[0]
 
-  while (true) {
+  let quit = false
+  while (!quit) {
     console.log(`\x1b[2m${currentComment.date}\x1b[0m`)
     console.log(showOneComment(currentComment))
 
@@ -177,37 +183,50 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
     }
 
     const choice = await choose(rl, clearBlankProperties({
+      q: {
+        help: 'Quit browsing comments.',
+        action: () => {
+          quit = true
+        }
+      },
+
       n: currentComment.next ? {
+        help: 'View next comment.',
         action: () => {
           currentComment = currentComment.next
         }
       } : undefined,
 
       p: currentComment.previous ? {
+        help: 'View previous comment.',
         action: () => {
           currentComment = currentComment.previous
         }
       } : undefined,
 
       i: currentComment.replies ? {
+        help: 'View replies.',
         action: () => {
           currentComment = currentComment.replies[0]
         }
       } : undefined,
 
       I: currentComment.replies && currentComment.replies.length > 1 ? {
+        help: 'View the most recent reply.',
         action: () => {
           currentComment = currentComment.replies[currentComment.replies.length - 1]
         }
       } : undefined,
 
       o: currentComment.parent ? {
+        help: 'Go out of this reply thread.',
         action: () => {
           currentComment = currentComment.parent
         }
       } : undefined,
 
       r: us ? {
+        help: 'Reply to this comment.',
         action: async () => {
           const message = await prompt(rl, 'Reply with: ')
 
@@ -264,7 +283,34 @@ function parseProfile(html) {
 }
 
 async function browseProfile({rl, us}, profile) {
-  console.log(profile)
+  let quit = false
+  while (!quit) {
+    console.log(
+      `\x1b[34;1m${profile.username}\x1b[0m` +
+      `  \x1b[2m${profile.rank}; Joined ${profile.joinDate.toDateString()}\x1b[0m`
+    )
+    console.log(`\x1b[1mAbout me:\x1b[0m ${profile.aboutMe}`)
+    console.log(`\x1b[1mWhat I'm working on:\x1b[0m ${profile.wiwo}`)
+
+    await choose(rl, {
+      q: {
+        help: 'Quit browsing this profile.',
+        action: async () => {
+          quit = true
+        }
+      },
+
+      c: {
+        help: 'Browse comments.',
+        action: async () => {
+          await browseComments(
+            {rl, us, pageType: 'user', pageId: profile.username},
+            await getComments('user', profile.username)
+          )
+        }
+      }
+    })
+  }
 }
 
 async function main() {
@@ -287,8 +333,9 @@ async function main() {
 
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
-  await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
-  // await browseProfile({rl, us}, await getProfile('_nix'))
+  // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
+  await browseProfile({rl, us}, await getProfile('_nix'))
+  rl.close()
 }
 
 main().catch(err => console.error(err))
