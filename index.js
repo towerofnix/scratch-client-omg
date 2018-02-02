@@ -90,10 +90,10 @@ function parseComments(html) {
           parent: comment,
           threadTopComment: comment
         })
-      ).get())
+      ).get().filter(c => c.content !== '[deleted]'))
     })
     return comment
-  }).get())
+  }).get().filter(c => c.content !== '[deleted]'))
 }
 
 function parseCommentEl(commentEl, {$}) {
@@ -341,7 +341,7 @@ async function main() {
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
   // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
-  await browseProfile({rl, us}, await getProfile('_nix'))
+  await browseProfile({rl, us}, await getProfile(pageId))
   rl.close()
 }
 
