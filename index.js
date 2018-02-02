@@ -206,7 +206,9 @@ async function main() {
   const rl = readline.createInterface({
     input: process.stdin, output: process.stdout
   })
-  await browseComments({rl, us, pageType: 'user', pageId: '_nix'}, await getComments('user', '_nix'))
+
+  const page = 'bharvey'
+  await browseComments({rl, us, pageType: 'user', pageId: page}, await getComments('user', page))
 }
 
 main().catch(err => console.error(err))
