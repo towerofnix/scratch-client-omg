@@ -35,9 +35,10 @@ function login() {
 function choose(rl, choiceDict) {
   return new Promise(resolve => {
     const keys = Object.keys(choiceDict)
+    const visibleKeys = keys.filter(k => choiceDict[k].invisible !== true)
     const promptString = (
       '[' +
-      (keys.every(k => k.length === 1) ? keys.join('') : keys.reduce((acc, key) => {
+      (visibleKeys.every(k => k.length === 1) ? visibleKeys.join('') : visibleKeys.reduce((acc, key) => {
         return acc + '|' + key
       })) +
       '] '
@@ -47,7 +48,9 @@ function choose(rl, choiceDict) {
       rl.question(promptString, answer => {
         if (answer === '?') {
           for (const [ key, { help } ] of Object.entries(choiceDict)) {
-            console.log(`- \x1b[34;1m${key}:\x1b[0m ${help}`)
+            if (help) {
+              console.log(`- \x1b[34;1m${key}:\x1b[0m ${help}`)
+            }
           }
           recursive()
         } else if (keys.includes(answer)) {
@@ -275,7 +278,7 @@ function parseProfile(html) {
     joinDate: new Date($('span[title]').attr('title')),
     aboutMe: $('#bio-readonly .overview').text(),
     wiwo: $('#status-readonly .overview').text(),
-    projectCount: $('.box-head:has(a[href*=projects]) h4').text()
+    projectCount: parseInt($('.box-head:has(a[href*=projects]) h4').text().match(/([0-9]+)/)[1])
   }
 
   if ($('.player a.project-name').length && $('.player a.project-name').text().trim().length) {
@@ -307,6 +310,14 @@ async function browseProfile({rl, us}, profile) {
         ` \x1b[33m${profile.featuredProject.name}\x1b[0m`)
     }
 
+    if (profile.projectCount) {
+      console.log(`${profile.username} has shared ${profile.projectCount} project${
+        profile.projectCount === 1 ? '' : 's'
+      }.`)
+    } else {
+      console.log(`${profile.username} has not shared any projects.`)
+    }
+
     await choose(rl, clearBlankProperties({
       q: {
         help: 'Quit browsing this profile.',
@@ -316,9 +327,16 @@ async function browseProfile({rl, us}, profile) {
       },
 
       f: profile.featuredProject ? {
-        help: 'Browse this user\'s featurd project.',
+        help: 'Browse this user\'s featured project.',
         action: async () => {
           await browseProject({rl, us}, await getProject(profile.featuredProject.id))
+        }
+      } : undefined,
+
+      P: profile.projectCount ? {
+        help: 'Browse this user\'s shared projects.',
+        action: async () => {
+          await browseUserProjects({rl, us}, profile.username)
         }
       } : undefined,
 
@@ -415,6 +433,85 @@ async function browseProject({rl, us}, project) {
   }
 }
 
+async function browsePagedList({rl, getItems, formatItem, title = '', pageCount, handleItem}) {
+  let quit = false, currentPageNumber = 1
+  while (!quit) {
+    const items = await getItems(currentPageNumber)
+    console.log(`${title ? title + ' ' : ''}(Page ${currentPageNumber} / ${pageCount})`)
+    for (let i = 0; i < items.length; i++) {
+      console.log(`[${i + 1}]: ${await formatItem(items[i])}`)
+    }
+    await choose(rl, Object.assign(clearBlankProperties({
+      q: {
+        help: 'Quit browsing this list.',
+        action: () => {
+          quit = true
+        }
+      },
+
+      n: currentPageNumber < pageCount ? {
+        help: 'Go to the next page.',
+        action: () => {
+          currentPageNumber++
+        }
+      } : undefined,
+
+      p: currentPageNumber > 1 ? {
+        help: 'Go to the previous page.',
+        action: () => {
+          currentPageNumber--
+        }
+      } : undefined,
+
+      ['1-' + items.length]: {
+        help: 'Choose an item from the list.',
+        action: () => {}
+      }
+    }), items.reduce((acc, item, i) => {
+      acc[i + 1] = {
+        invisible: true,
+        action: async () => {
+          await handleItem(item)
+        }
+      }
+      return acc
+    }, {})))
+  }
+}
+
+function getUserProjects(username, pageNumber = 1) {
+  return fetch(`${scratch}/users/${username}/projects/?page=${pageNumber}`)
+    .then(res => res.text())
+    .then(html => parseUserProjects(html))
+}
+
+function parseUserProjects(html) {
+  const $ = cheerio.load(html)
+
+  return {
+    projects: $('.project.thumb').map((i, projectEl) => {
+      return {
+        name: $(projectEl).find('.title a').text(),
+        id: parseInt($(projectEl).find('.title a').attr('href').match(/([0-9]+)/)[1])
+      }
+    }).get(),
+    pageCount: $('.page-links').length ? parseInt($('.page-current').last().text().trim()) : 1
+  }
+}
+
+async function browseUserProjects({rl, us}, username) {
+  await browsePagedList({
+    rl,
+    getItems: async n => (await getUserProjects(username, n)).projects,
+    title: `\x1b[34;1m${username}'s\x1b[0;1m projects\x1b[0m`,
+    formatItem: p => `\x1b[33m${p.name}\x1b[0m`,
+    pageCount: (await getUserProjects(username)).pageCount,
+    handleItem: async p => {
+      await browseProject({rl, us}, await getProject(p.id))
+    }
+  })
+}
+
 async function main() {
   let us
 
@@ -435,7 +532,6 @@ async function main() {
 
   const pageId = process.argv[2] || '_nix'
   const pageType = process.argv[3] || 'user'
-  // await browseComments({rl, us, pageType, pageId}, await getComments(pageType, pageId))
   if (pageType === 'user') {
     await browseProfile({rl, us}, await getProfile(pageId))
   } else if (pageType === 'project') {
