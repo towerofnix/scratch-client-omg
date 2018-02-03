@@ -160,14 +160,18 @@ function trimWhitespace(string) {
   return string.split('\n').map(str => str.trim()).filter(Boolean).join(' ')
 }
 
-async function browseComments({rl, us, pageType, pageId}, comments) {
+async function browseComments({rl, us, pageType, pageId}) {
+  let currentPageNumber = 1
+
+  const comments = await getComments(pageType, pageId, 1)
+
   if (comments.length === 0) {
     console.log('There are no comments on this.')
     return
   }
 
   let currentComment = comments[0]
-
+  let noMoreComments = false
   let quit = false
   while (!quit) {
     console.log(`\x1b[2m${currentComment.date}\x1b[0m`)
@@ -229,6 +233,20 @@ async function browseComments({rl, us, pageType, pageId}, comments) {
           await browseProfile({rl, us}, await getProfile(currentComment.author))
         }
       },
+
+      m: !(noMoreComments || currentComment.parent || currentComment.next) ? {
+        help: 'Load more comments.',
+        action: async () => {
+          const newComments = await getComments(pageType, pageId, ++currentPageNumber)
+          if (newComments.length) {
+            comments.push(...newComments)
+            setupNextPreviousLinks(comments)
+          } else {
+            console.log('There are no more comments.')
+            noMoreComments = true
+          }
+        }
+      } : undefined,
 
       r: us ? {
         help: 'Reply to this comment.',
@@ -343,10 +361,9 @@ async function browseProfile({rl, us}, profile) {
       c: {
         help: 'Browse comments.',
         action: async () => {
-          await browseComments(
-            {rl, us, pageType: 'user', pageId: profile.username},
-            await getComments('user', profile.username)
-          )
+          await browseComments({
+            rl, us, pageType: 'user', pageId: profile.username
+          })
         }
       }
     }))
@@ -423,10 +440,9 @@ async function browseProject({rl, us}, project) {
       c: {
         help: 'Browse comments.',
         action: async () => {
-          await browseComments(
-            {rl, us, pageType: 'project', pageId: project.id},
-            await getComments('project', project.id)
-          )
+          await browseComments({
+            rl, us, pageType: 'project', pageId: project.id
+          })
         }
       }
     }))
