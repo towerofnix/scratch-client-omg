@@ -185,7 +185,12 @@ async function browseComments({rl, us, pageType, pageId}) {
     }
 
     await choose(rl, clearBlankProperties({
-      q: {
+      q: currentComment.parent ? {
+        help: 'Quit browsing these replies.',
+        action: () => {
+          currentComment = currentComment.parent
+        }
+      } : {
         help: 'Quit browsing comments.',
         action: () => {
           quit = true
