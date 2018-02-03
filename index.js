@@ -278,7 +278,7 @@ function parseProfile(html) {
     joinDate: new Date($('span[title]').attr('title')),
     aboutMe: $('#bio-readonly .overview').text(),
     wiwo: $('#status-readonly .overview').text(),
-    projectCount: parseInt($('.box-head:has(a[href*=projects]) h4').text().match(/([0-9]+)/)[1])
+    projectCount: parseInt($('.box:has(#shared) h4').text().match(/([0-9]+)/)[1])
   }
 
   if ($('.player a.project-name').length && $('.player a.project-name').text().trim().length) {
