@@ -239,13 +239,14 @@ async function browseComments({rl, us, pageType, pageId}) {
         }
       },
 
-      m: !(noMoreComments || currentComment.parent || currentComment.next) ? {
+      m: !noMoreComments ? {
         help: 'Load more comments.',
         action: async () => {
           const newComments = await getComments(pageType, pageId, ++currentPageNumber)
           if (newComments.length) {
             comments.push(...newComments)
             setupNextPreviousLinks(comments)
+            currentComment = newComments[0]
           } else {
             console.log('There are no more comments.')
             noMoreComments = true
