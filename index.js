@@ -295,7 +295,7 @@ function parseProfile(html) {
   const $ = cheerio.load(html)
 
   const profile = {
-    username: $('#profile-data h2').text(),
+    username: $('#profile-data h2').text().match(/[^*]*/),
     rank: $('#profile-data .group').text().trim(),
     location: $('#profile-data .location').text(),
     joinDate: new Date($('span[title]').attr('title')),
