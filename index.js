@@ -295,6 +295,10 @@ function getProfile(username) {
 function parseProfile(html) {
   const $ = cheerio.load(html)
 
+  if ($('#profile-data').length === 0) {
+    return {notFound: true}
+  }
+
   const profile = {
     username: $('#profile-data h2').text().match(/[^*]*/),
     rank: $('#profile-data .group').text().trim(),
@@ -319,6 +323,11 @@ function parseProfile(html) {
 }
 
 async function browseProfile({rl, us}, profile) {
+  if (profile.notFound) {
+    console.log('That user profile is not found, sorry.')
+    return
+  }
+
   let quit = false
   while (!quit) {
     console.log(
