@@ -338,8 +338,9 @@ async function browseProfile({rl, us}, profile) {
     console.log(`\x1b[1mWhat I'm working on:\x1b[0m ${profile.wiwo}`)
 
     if (profile.featuredProject) {
+      const h = profile.featuredProjectHeading
       console.log(
-        `\x1b[1m${profile.featuredProjectHeading}:\x1b[0m` +
+        `\x1b[1m${h + (h.endsWith('!') ? '' : ':')}\x1b[0m` +
         ` \x1b[33m${profile.featuredProject.name}\x1b[0m`)
     }
 
