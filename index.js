@@ -80,6 +80,26 @@ function getComments(type, id, page = 1) {
     .then(html => parseComments(html))
 }
 
+async function messagePrompt({rl, us, pageType, pageId, commenteeId, parent, promptStr}) {
+  const message = await prompt(rl, promptStr)
+
+  if (message.length > 500) {
+    console.log('Message too long (> 500 characters).')
+    return
+  }
+
+  if (message.trim().length === 0) {
+    console.log('Not sending reply (empty input).')
+    return
+  }
+
+  const reply = await postComment({pageType, pageId, us,
+    content: message, commenteeId, parent
+  })
+
+  return reply
+}
+
 function parseComments(html) {
   const $ = cheerio.load(html)
 
@@ -125,11 +145,11 @@ function setupNextPreviousLinks(comments) {
 function postComment({pageType, pageId, content, us, commenteeId = '', parent = null}) {
   return fetch(`${siteAPI}/comments/${pageType}/${pageId}/add/`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: JSON.stringify(clearBlankProperties({
       content,
-      commentee_id: commenteeId,
-      parent_id: parent ? parent.id : undefined
-    }),
+      commentee_id: commenteeId || '',
+      parent_id: parent ? parent.id : ''
+    })),
     headers: {
       'Cookie': `scratchsessionsid=${us.sessionId}; scratchcsrftoken=a;`,
       'X-CSRFToken': 'a',
@@ -147,7 +167,10 @@ function postComment({pageType, pageId, content, us, commenteeId = '', parent = 
         return comment
       })
     } else {
-      throw new Error(res.status)
+      return res.text().then(text => {
+        console.log(text)
+        throw new Error(res.status)
+      })
     }
   })
 }
@@ -257,22 +280,10 @@ async function browseComments({rl, us, pageType, pageId}) {
       r: us ? {
         help: 'Reply to this comment.',
         action: async () => {
-          const message = await prompt(rl, 'Reply with: ')
-
-          if (message.length > 500) {
-            console.log('Message too long (> 500 characters).')
-            return
-          }
-
-          if (message.trim().length === 0) {
-            console.log('Not sending reply (empty input).')
-            return
-          }
-
-          const reply = await postComment({pageType, pageId, us,
-            content: message,
+          const reply = await messagePrompt({rl, us, pageType, pageId,
             commenteeId: currentComment.authorId,
-            parent: currentComment.threadTopComment
+            parent: currentComment.threadTopComment,
+            promptStr: 'Reply with: '
           })
 
           const replies = currentComment.parent ? currentComment.parent.replies : currentComment.replies
@@ -380,6 +391,15 @@ async function browseProfile({rl, us}, profile) {
           await browseComments({
             rl, us, pageType: 'user', pageId: profile.username
           })
+        }
+      },
+
+      C: {
+        help: 'Leave a comment.',
+        action: async () => {
+          if (await messagePrompt({rl, us, pageType: 'user', pageId: profile.username, promptStr: 'Comment: '})) {
+            console.log('Sent.')
+          }
         }
       }
     }))
