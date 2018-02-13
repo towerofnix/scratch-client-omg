@@ -46,16 +46,27 @@ function choose(rl, choiceDict) {
 
     const recursive = function() {
       rl.question(promptString, answer => {
-        if (answer === '?') {
-          for (const [ key, { help } ] of Object.entries(choiceDict)) {
+        if (answer === '?' || answer === 'help') {
+          for (const [ key, { longcodes, help } ] of Object.entries(choiceDict)) {
             if (help) {
-              console.log(`- \x1b[34;1m${key}:\x1b[0m ${help}`)
+              console.log(`- \x1b[34;1m${key + (longcodes ? ` (${longcodes.join(', ')})` : '')}:\x1b[0m ${help}`)
             }
           }
           recursive()
-        } else if (keys.includes(answer)) {
-          const choice = choiceDict[answer]
-          resolve(choice.action(answer))
+          return
+        }
+
+        const match = (
+          keys.includes(answer) ? choiceDict[answer] :
+          Object.values(choiceDict).find(
+            o => o.longcodes && o.longcodes.includes(
+              answer.replace(/[- ]/g, '')
+            )
+          )
+        )
+
+        if (match) {
+          resolve(match.action(answer))
         } else {
           recursive()
         }
@@ -208,13 +219,9 @@ async function browseComments({rl, us, pageType, pageId}) {
     }
 
     await choose(rl, clearBlankProperties({
-      q: currentComment.parent ? {
-        help: 'Quit browsing these replies.',
-        action: () => {
-          currentComment = currentComment.parent
-        }
-      } : {
+      q: {
         help: 'Quit browsing comments.',
+        longcodes: ['quit', 'back'],
         action: () => {
           quit = true
         }
@@ -222,6 +229,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       n: currentComment.next ? {
         help: 'View next comment.',
+        longcodes: ['next'],
         action: () => {
           currentComment = currentComment.next
         }
@@ -229,6 +237,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       p: currentComment.previous ? {
         help: 'View previous comment.',
+        longcodes: ['prev', 'previous'],
         action: () => {
           currentComment = currentComment.previous
         }
@@ -236,6 +245,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       i: (currentComment.replies && currentComment.replies.length) ? {
         help: 'View replies.',
+        longcodes: ['in', 'replies'],
         action: () => {
           currentComment = currentComment.replies[0]
         }
@@ -243,6 +253,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       I: currentComment.replies && currentComment.replies.length > 1 ? {
         help: 'View the most recent reply.',
+        longcodes: ['last', 'lastreply'],
         action: () => {
           currentComment = currentComment.replies[currentComment.replies.length - 1]
         }
@@ -250,6 +261,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       o: currentComment.parent ? {
         help: 'Go out of this reply thread.',
+        longcodes: ['out', 'top'],
         action: () => {
           currentComment = currentComment.parent
         }
@@ -257,6 +269,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       a: {
         help: 'Browse the profile of the author of this comment.',
+        longcodes: ['author', 'profile'],
         action: async () => {
           await browseProfile({rl, us}, await getProfile(currentComment.author))
         }
@@ -264,6 +277,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       m: !noMoreComments ? {
         help: 'Load more comments.',
+        longcodes: ['more'],
         action: async () => {
           const newComments = await getComments(pageType, pageId, ++currentPageNumber)
           if (newComments.length) {
@@ -279,6 +293,7 @@ async function browseComments({rl, us, pageType, pageId}) {
 
       r: us ? {
         help: 'Reply to this comment.',
+        longcodes: ['reply'],
         action: async () => {
           const reply = await messagePrompt({rl, us, pageType, pageId,
             commenteeId: currentComment.authorId,
@@ -366,6 +381,7 @@ async function browseProfile({rl, us}, profile) {
     await choose(rl, clearBlankProperties({
       q: {
         help: 'Quit browsing this profile.',
+        longcodes: ['quit', 'back'],
         action: async () => {
           quit = true
         }
@@ -373,6 +389,7 @@ async function browseProfile({rl, us}, profile) {
 
       f: profile.featuredProject ? {
         help: 'Browse this user\'s featured project.',
+        longcodes: ['featured'],
         action: async () => {
           await browseProject({rl, us}, await getProject(profile.featuredProject.id))
         }
@@ -380,6 +397,7 @@ async function browseProfile({rl, us}, profile) {
 
       P: profile.projectCount ? {
         help: 'Browse this user\'s shared projects.',
+        longcodes: ['projects', 'shared'],
         action: async () => {
           await browseUserProjects({rl, us}, profile.username)
         }
@@ -387,6 +405,7 @@ async function browseProfile({rl, us}, profile) {
 
       c: {
         help: 'Browse comments.',
+        longcodes: ['comments'],
         action: async () => {
           await browseComments({
             rl, us, pageType: 'user', pageId: profile.username
@@ -396,6 +415,7 @@ async function browseProfile({rl, us}, profile) {
 
       C: {
         help: 'Leave a comment.',
+        longcodes: ['comment', 'reply'],
         action: async () => {
           if (await messagePrompt({rl, us, pageType: 'user', pageId: profile.username, promptStr: 'Comment: '})) {
             console.log('Sent.')
@@ -454,6 +474,7 @@ async function browseProject({rl, us}, project) {
     await choose(rl, clearBlankProperties({
       q: {
         help: 'Quit browsing this project.',
+        longcodes: ['quit', 'back'],
         action: () => {
           quit = true
         }
@@ -461,6 +482,7 @@ async function browseProject({rl, us}, project) {
 
       N: (project.instructions || project.notesAndCredits) ? {
         help: 'View instructions and notes/credits.',
+        longcodes: ['instructions', 'notes', 'credits'],
         action: () => {
           showNotes()
         }
@@ -468,6 +490,7 @@ async function browseProject({rl, us}, project) {
 
       a: {
         help: 'Browse the profile of the author of this project.',
+        longcodes: ['author', 'profile'],
         action: async () => {
           await browseProfile({rl, us}, await getProfile(project.author))
         }
@@ -475,6 +498,7 @@ async function browseProject({rl, us}, project) {
 
       c: {
         help: 'Browse comments.',
+        longcodes: ['comments'],
         action: async () => {
           await browseComments({
             rl, us, pageType: 'project', pageId: project.id
@@ -496,6 +520,7 @@ async function browsePagedList({rl, getItems, formatItem, title = '', pageCount,
     await choose(rl, Object.assign(clearBlankProperties({
       q: {
         help: 'Quit browsing this list.',
+        longcodes: ['quit', 'back'],
         action: () => {
           quit = true
         }
@@ -503,6 +528,7 @@ async function browsePagedList({rl, getItems, formatItem, title = '', pageCount,
 
       n: currentPageNumber < pageCount ? {
         help: 'Go to the next page.',
+        longcodes: ['next'],
         action: () => {
           currentPageNumber++
         }
@@ -510,6 +536,7 @@ async function browsePagedList({rl, getItems, formatItem, title = '', pageCount,
 
       p: currentPageNumber > 1 ? {
         help: 'Go to the previous page.',
+        longcodes: ['prev', 'previous'],
         action: () => {
           currentPageNumber--
         }
