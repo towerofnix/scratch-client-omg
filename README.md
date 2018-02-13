@@ -1,6 +1,6 @@
 # scratch-client-omg
 
-Scratch is crashing Firefox (nightly) right now and I need a way to view and reply to comments.
+Scratch was crashing Firefox (nightly) for a while and I needed a way to view and reply to comments. This is the code I used. Also, it's all absolutely free-as-in-freedom, unlike most of the Scratch website (of which the client is now partially, but not completely, open source).
 
 ![Demo screenshot](https://u.cubeupload.com/QNgz4p.png)
 
