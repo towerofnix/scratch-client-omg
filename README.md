@@ -11,3 +11,19 @@ $ git clone https://github.com/towerofnix/scratch-client-omg.git
 $ cd scratch-client-omg
 $ npm install
 ```
+
+### Usage
+
+```
+$ node .
+help
+
+$ node . griffpatch
+griffpatch  Scratcher; Joined Oct 23 2012
+...
+
+$ node . 46587498 project
+Scratcharia v2.8.3
+by griffpatch; id: 46587498
+...
+```
