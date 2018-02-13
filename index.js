@@ -32,7 +32,17 @@ function login() {
   })
 }
 
-function choose(rl, choiceDict) {
+function choose({rl, us}, choiceDict) {
+  if (!('#' in choiceDict)) {
+    choiceDict['#'] = {
+      help: 'Menu - go somewhere or do something.',
+      longcodes: ['menu'],
+      action: () => showGlobalMenu({rl, us})
+    }
+  }
+
+  choiceDict = clearBlankProperties(choiceDict)
+
   return new Promise(resolve => {
     const keys = Object.keys(choiceDict)
     const visibleKeys = keys.filter(k => choiceDict[k].invisible !== true)
@@ -82,6 +92,37 @@ function prompt(rl, question = 'prompt: ') {
     rl.question(question, answer => {
       resolve(answer)
     })
+  })
+}
+
+async function showGlobalMenu({rl, us}) {
+  await choose({rl, us}, {
+    '#': undefined,
+    q: {
+      help: 'Go back to what you were doing or browsing before.',
+      longcodes: ['quit', 'back'],
+      action: () => {}
+    },
+    u: {
+      help: 'Browse a user by entering their username.',
+      longcodes: ['user', 'profile'],
+      action: async () => {
+        const username = await prompt(rl, 'Username? ')
+        if (username) {
+          await browseProfile({rl, us}, await getProfile(username))
+        }
+      }
+    },
+    p: {
+      help: 'Browse a project by entering its ID.',
+      longcodes: ['project'],
+      action: async () => {
+        const id = await prompt(rl, 'Project ID? ')
+        if (id) {
+          await browseProject({rl, us}, await getProject(id))
+        }
+      }
+    }
   })
 }
 
@@ -218,7 +259,7 @@ async function browseComments({rl, us, pageType, pageId}) {
       }
     }
 
-    await choose(rl, clearBlankProperties({
+    await choose({rl, us}, clearBlankProperties({
       q: {
         help: 'Quit browsing comments.',
         longcodes: ['quit', 'back'],
@@ -378,7 +419,7 @@ async function browseProfile({rl, us}, profile) {
       console.log(`${profile.username} has not shared any projects.`)
     }
 
-    await choose(rl, clearBlankProperties({
+    await choose({rl, us}, clearBlankProperties({
       q: {
         help: 'Quit browsing this profile.',
         longcodes: ['quit', 'back'],
@@ -471,7 +512,7 @@ async function browseProject({rl, us}, project) {
       firstTime = false
     }
 
-    await choose(rl, clearBlankProperties({
+    await choose({rl, us}, clearBlankProperties({
       q: {
         help: 'Quit browsing this project.',
         longcodes: ['quit', 'back'],
@@ -517,7 +558,7 @@ async function browsePagedList({rl, getItems, formatItem, title = '', pageCount,
     for (let i = 0; i < items.length; i++) {
       console.log(`[${i + 1}]: ${await formatItem(items[i])}`)
     }
-    await choose(rl, Object.assign(clearBlankProperties({
+    await choose({rl, us}, Object.assign(clearBlankProperties({
       q: {
         help: 'Quit browsing this list.',
         longcodes: ['quit', 'back'],
