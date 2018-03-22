@@ -550,10 +550,24 @@ async function browseProject({rl, us}, project) {
   }
 }
 
-async function browsePagedList({rl, getItems, formatItem, title = '', pageCount, handleItem}) {
+async function browsePagedList({rl, us, getItems, formatItem, title = '', pageCount, handleItem}) {
   let quit = false, currentPageNumber = 1
   while (!quit) {
     const items = await getItems(currentPageNumber)
+
+    let header = ''
+
+    if (title) {
+      header += title + ' '
+    }
+
+    header += `(Page ${currentPageNumber}`
+    if (pageCount) {
+      header += ` / ${pageCount}`
+    }
+    header += ')'
+    console.log(header)
+
     console.log(`${title ? title + ' ' : ''}(Page ${currentPageNumber} / ${pageCount})`)
     for (let i = 0; i < items.length; i++) {
       console.log(`[${i + 1}]: ${await formatItem(items[i])}`)
@@ -621,7 +635,7 @@ function parseUserProjects(html) {
 
 async function browseUserProjects({rl, us}, username) {
   await browsePagedList({
-    rl,
+    rl, us,
     getItems: async n => (await getUserProjects(username, n)).projects,
     title: `\x1b[34;1m${username}'s\x1b[0;1m projects\x1b[0m`,
     formatItem: p => `\x1b[33m${p.name}\x1b[0m`,
