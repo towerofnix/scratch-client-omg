@@ -650,7 +650,7 @@ async function main() {
     input: process.stdin, output: process.stdout
   })
 
-  const pageId = process.argv[2] || '_nix'
+  const pageId = process.argv[2] || us.username
   const pageType = process.argv[3] || 'user'
   if (pageType === 'user') {
     await browseProfile({rl, us}, await getProfile(pageId))
