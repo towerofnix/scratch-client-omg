@@ -410,7 +410,8 @@ async function browseProfile({rl, us}, profile) {
   while (!quit) {
     console.log(
       `\x1b[34;1m${profile.username}\x1b[0m` +
-      `  \x1b[2m${profile.rank}; Joined ${profile.joinDate.toDateString()}\x1b[0m`
+      `  \x1b[2m${profile.rank} from ${profile.location}` +
+      `; Joined ${profile.joinDate.toDateString()}\x1b[0m`
     )
     console.log(`\x1b[1mAbout me:\x1b[0m ${profile.aboutMe}`)
     console.log(`\x1b[1mWhat I'm working on:\x1b[0m ${profile.wiwo}`)
