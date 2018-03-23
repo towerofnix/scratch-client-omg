@@ -2,7 +2,7 @@
   "name": "scratch-client-omg",
   "version": "1.0.0",
   "description": "Not-so-powerful terminal client for Scratch community website",
-  "main": "index.js",
+  "main": "bin/scratch-client.js",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "node-fetch": "^1.7.3",
