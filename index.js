@@ -7,6 +7,10 @@ const Scratch = require('scratch-api')
 
 const scratch = 'https://scratch.mit.edu'
 const siteAPI = scratch + '/site-api'
+const newAPI = 'https://api.scratch.mit.edu'
+
+// :)
+let smile = 1
 
 function clearBlankProperties(obj) {
   const newObj = Object.assign({}, obj)
@@ -121,6 +125,13 @@ async function showGlobalMenu({rl, us}) {
         if (id) {
           await browseProject({rl, us}, await getProject(id))
         }
+      }
+    },
+    m: {
+      help: 'View your messages.',
+      longcodes: ['messages'],
+      action: async () => {
+        await browseMessages({rl, us})
       }
     }
   })
@@ -568,7 +579,6 @@ async function browsePagedList({rl, us, getItems, formatItem, title = '', pageCo
     header += ')'
     console.log(header)
 
-    console.log(`${title ? title + ' ' : ''}(Page ${currentPageNumber} / ${pageCount})`)
     for (let i = 0; i < items.length; i++) {
       console.log(`[${i + 1}]: ${await formatItem(items[i])}`)
     }
@@ -581,7 +591,7 @@ async function browsePagedList({rl, us, getItems, formatItem, title = '', pageCo
         }
       },
 
-      n: currentPageNumber < pageCount ? {
+      n: !pageCount || currentPageNumber < pageCount ? {
         help: 'Go to the next page.',
         longcodes: ['next'],
         action: () => {
@@ -661,6 +671,209 @@ async function browseUserProjects({rl, us}, username) {
   })
 }
 
+function getSessionData(us) {
+  return fetch(scratch + '/session', {
+    headers: {
+      'Cookie': `scratchsessionsid=${us.sessionId}`
+    }
+  }).then(res => res.json())
+}
+
+function getAuthToken(us) {
+  return getSessionData(us)
+    .then(obj => obj.user.token)
+}
+
+async function browseMessages({rl, us}) {
+  const token = await getAuthToken(us)
+
+  await browsePagedList({
+    rl, us,
+    getItems: async n => (await getMessages(us.username, token, n)),
+    title: `\x1b[34;1m${us.username}'s\x1b[0;1m messages\x1b[0m`,
+    formatItem: m => formatMessage({us}, m),
+    pageCount: null,
+
+    handleItem: async m => {
+      console.log(formatMessage({us}, m))
+
+      await choose({rl, us}, clearBlankProperties({
+        q: {
+          help: 'Quit viewing this message.',
+          longcodes: ['quit', 'back'],
+          action: () => {
+            // No need to set a "quit" flag - we'll automatically quit after
+            // the user makes a choice anyways.
+          }
+        },
+
+        // "There was activity in.." messages have the actor 'systemuser'.
+        a: m.actor_username === 'systemuser' ? undefined : {
+          help: `View this user's profile, \x1b[34;1m${m.actor_username}\x1b[0m.`,
+          longcodes: ['actor', 'profile'],
+          action: async () => {
+            await browseProfile({rl, us}, await getProfile(m.actor_username))
+          }
+        },
+
+        p: m.project_id ? {
+          help: `View this project, \x1b[33;1m${m.project_title || m.title}\x1b[0m.`,
+          longcodes: ['project'],
+          action: async () => {
+            await browseProject({rl, us}, await getProject(m.project_id))
+          }
+        } : undefined,
+
+        s: m.gallery_id ? {
+          help: `View this studio, \x1b[32;1m${m.gallery_title || m.title}\x1b[0m.`,
+          longcodes: ['studio'],
+          action: async () => {
+            // TODO: Studio view.
+            console.log('Err, sorry, studios aren\'t implemented yet! :'+')'.repeat(smile++))
+            await new Promise(res => setTimeout(res, 800))
+          }
+        } : undefined,
+
+        f: m.topic_id ? {
+          help: `View this topic, \x1b[35;1m${m.topic_title}[x1b[0m.`,
+          longcodes: ['forum', 'topic', 'thread'],
+          action: async () => {
+            // TODO: Forum view.
+            console.log('Sorry, forum threads aren\'t implemented yet! :'+')'.repeat(smile++))
+            await new Promise(res => setTimeout(res, 800))
+          }
+        } : undefined,
+
+        g: m.comment_obj_id ? {
+          help: `Go to where this comment was posted, ${
+            m.comment_type === 0 ? `\x1b[33;1m${m.comment_obj_title}` :
+            m.comment_type === 1 ? `\x1b[34;1m${m.comment_obj_title}'s profile` :
+            m.comment_type === 2 ? `\x1b[32;1m${m.comment_obj_title}` :
+            'sooomewhere in the muuuuuultiverse~'
+          }\x1b[0m.`,
+          longcodes: ['go'],
+          action: async () => {
+            if (m.comment_type === 0) {
+              await browseProject({rl, us}, await getProject(m.comment_obj_id))
+            } else if (m.comment_type === 1) {
+              await browseProfile({rl, us}, await getProfile(m.comment_obj_id))
+            } else {
+              // TODO: Studio view.
+              console.log('Sorry, studio views aren\'t implemented yet! :'+')'.repeat(smile++))
+              await new Promise(res => setTimeout(res, 800))
+            }
+          }
+        } : undefined
+      }))
+    }
+  })
+}
+
+async function getMessages(username, token, pageNum = 1) {
+  return await fetch(`${newAPI}/users/${username}/messages` +
+    `?x-token=${token}` +
+    `&limit=10` +
+    `&offset=${10 * (pageNum - 1)}`).then(res => res.json())
+}
+
+function formatMessage({us}, m) {
+  let eventStr = ''
+
+  const actor = `\x1b[34;1m${m.actor_username}\x1b[0m`
+  const project = `\x1b[33;1m${m.title}\x1b[0m`
+  const project2 = `\x1b[33;1m${m.project_title}\x1b[0m`
+  const studio = `\x1b[32;1m${m.title}\x1b[0m`
+  const studio2 = `\x1b[32;1m${m.gallery_title}\x1b[0m`
+  const topic = `\x1b[35;1m${m.topic_title}\x1b[0m`
+
+  switch (m.type) {
+    case 'loveproject': eventStr += `${actor} \x1b[31mloved your project ${project}\x1b[31m.\x1b[0m`; break
+    case 'favoriteproject': eventStr += `${actor} \x1b[33mfavorited your project ${project2}\x1b[33m.\x1b[0m`; break
+    case 'remixproject': eventStr += `${actor} \x1b[35mremixed your project ${project}\x1b[34m.\x1b[0m`; break
+
+    case 'addcomment': {
+      const text = m.comment_fragment
+      eventStr += `${actor} \x1b[36mleft a comment`
+
+      if (m.comment_type === 0) {
+        eventStr += ` on \x1b[33;1m${m.comment_obj_title}\x1b[0m`
+      } else if (m.comment_type === 1) {
+        if (m.comment_obj_title === m.actor_username) {
+          eventStr += ' on their profile'
+        } else if (m.comment_obj_title === us.username) {
+          eventStr += ' on your profile'
+        } else {
+          eventStr += ` on \x1b[34;1m${m.comment_obj_title}\x1b[0;36m's profile`
+        }
+      } else if (m.comment_type === 2) {
+        eventStr += ` on \x1b[32;1m${m.comment_obj_title}\x1b[0m`
+      }
+
+      eventStr += '\x1b[36m:\x1b[0m "'
+      if (text.length >= 40) {
+        eventStr += `${text.slice(0, 40)}...`
+      } else {
+        eventStr += text
+      }
+      eventStr += '"'
+      break
+    }
+
+    case 'followuser': eventStr += `${actor} \x1b[35mfollowed you.\x1b[0m`; break
+    case 'curatorinvite': eventStr += `${actor} \x1b[32minvited you to ${studio}\x1b[32m.\x1b[0m`; break
+    case 'becomeownerstudio': eventStr += `${actor} \x1b[32mpromoted you to a manager of ${studio2}\x1b[32m.\x1b[0m`; break
+    case 'studioactivity': eventStr += `\x1b[32mThere was activity in ${studio}\x1b[32m.\x1b[0m`; break
+    case 'forumpost': eventStr += `${actor} \x1b[35mmade a post in ${topic}\x1b[0m\x1b[35m.\x1b[0m`; break
+    case 'userjoin': eventStr += `\x1b[39;1mWelcome to Scratch! \x1b[0;39mAfter you make projects and comments, you'll get messages about them here.\x1b[0m`; break
+
+    default: eventStr += `Something along the lines of "${m.type}" happened.`
+  }
+
+  // TODO: Timestamps
+
+  const date = new Date(m.datetime_created)
+  eventStr += ` \x1b[2m(${timeAgo(date)})\x1b[0m`
+
+  return eventStr
+}
+
+function timeAgo(date) {
+  const now = Date.now()
+  const diff = now - date
+
+  const second = 1000
+  const minute = 60 * second
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  const days = Math.floor(diff / day)
+  const hours = Math.floor((diff % day) / hour)
+  const minutes = Math.floor((diff % hour) / minute)
+  const seconds = Math.floor((diff % minute) / second)
+
+  let str
+  if (days) {
+    str = days + ' day'
+    if (days > 1) {
+      str += 's'
+    }
+  } else if (hours) {
+    str = hours + 'h'
+    if (minutes) {
+      str += ', ' + minutes + 'm'
+    }
+  } else if (minutes) {
+    str = minutes + 'm'
+    if (seconds) {
+      str += ', ' + seconds + 's'
+    }
+  } else {
+    return 'now'
+  }
+  str += ' ago'
+  return str
+}
+
 async function main() {
   let us
 
@@ -679,13 +892,18 @@ async function main() {
     input: process.stdin, output: process.stdout
   })
 
-  const pageId = process.argv[2] || us.username
-  const pageType = process.argv[3] || 'user'
-  if (pageType === 'user') {
-    await browseProfile({rl, us}, await getProfile(pageId))
-  } else if (pageType === 'project') {
-    await browseProject({rl, us}, await getProject(pageId))
+  if (process.argv[2] === 'messages') {
+    await browseMessages({rl, us})
+  } else {
+    const pageId = process.argv[2] || us.username
+    const pageType = process.argv[3] || 'user'
+    if (pageType === 'user') {
+      await browseProfile({rl, us}, await getProfile(pageId))
+    } else if (pageType === 'project') {
+      await browseProject({rl, us}, await getProject(pageId))
+    }
   }
+
   rl.close()
 }
 
