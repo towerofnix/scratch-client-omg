@@ -597,6 +597,21 @@ async function browsePagedList({rl, us, getItems, formatItem, title = '', pageCo
         }
       } : undefined,
 
+      j: {
+        help: 'Jump to a particular page.',
+        longcodes: ['jump'],
+        action: async () => {
+          const n = parseInt(await prompt(rl, 'What page? '))
+          if (!isNaN(n)) {
+            if (pageCount) {
+              currentPageNumber = Math.min(n, pageCount)
+            } else {
+              currentPageNumber = n
+            }
+          }
+        }
+      },
+
       ['1-' + items.length]: {
         help: 'Choose an item from the list.',
         action: () => {}
