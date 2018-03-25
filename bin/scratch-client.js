@@ -43,9 +43,9 @@ module.exports.main = async function() {
     const pageId = process.argv[2] || us.username
     const pageType = process.argv[3] || 'user'
     if (pageType === 'user') {
-      await profiles.browse({rl, us}, await profiles.get(pageId))
+      await profiles.browse({rl, us, username: pageId})
     } else if (pageType === 'project') {
-      await projects.browse({rl, us}, await projects.get(pageId))
+      await projects.browse({rl, us, id: pageId})
     }
   }
 
