@@ -2,10 +2,10 @@
 
 const readline = require('readline')
 const Scratch = require('scratch-api')
-
+const messages = require('../lib/messages')
 const profiles = require('../lib/profiles')
 const projects = require('../lib/projects')
-const messages = require('../lib/messages')
+const studios = require('../lib/studios')
 
 function login() {
   return new Promise((resolve, reject) => {
@@ -46,6 +46,8 @@ module.exports.main = async function() {
       await profiles.browse({rl, us, username: pageId})
     } else if (pageType === 'project') {
       await projects.browse({rl, us, id: pageId})
+    } else if (pageType === 'studio') {
+      await studios.browse({rl, us, id: pageId})
     }
   }
 
