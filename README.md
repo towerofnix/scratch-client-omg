@@ -33,19 +33,23 @@ by griffpatch; id: 46587498
 This client is definitely not a feature-complete clone of the Scratch web client, but it does support the following:
 
 * Projects:
-  * Read title, publish date
+  * Read title, publish date, tags
   * Read instructions, notes and credits
+  * Read and jump to original projects of remixes
+  * View thumbnail (directly or copy URL)
   * View project ID, which can be used alongside programs that don't use Flash, like [Scratch 3.0](https://llk.github.io/scratch-gui/) or [Phosphorus](https://phosphorus.github.io/)
   * Leave and view comments
 * User profiles:
   * Read username, location/country, rank, join date, project count
   * Read "What I'm working on" and "About me"
+  * View avatar (directly or copy URL)
   * View and jump to featured project (including custom label, e.g. "Work in progress")
   * List and browse projects
   * Leave and view comments
 * Studios:
   * Read title, project count
   * Read description
+  * View thumbnail (directly or copy URL)
   * List and browse managers, curators, and projects
   * Leave and view comments
 * Messages:
