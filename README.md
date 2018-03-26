@@ -36,6 +36,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * Read title, publish date, tags
   * Read instructions, notes and credits
   * Read and jump to original projects of remixes
+  * View love-it and favorite counts
   * View thumbnail (directly or copy URL)
   * View project ID, which can be used alongside programs that don't use Flash, like [Scratch 3.0](https://llk.github.io/scratch-gui/) or [Phosphorus](https://phosphorus.github.io/)
   * Leave and view comments; delete any comments on your own project
