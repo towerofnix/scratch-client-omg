@@ -42,7 +42,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * Leave and view comments; delete any comments on your own project
 * User profiles:
   * Read username, location/country, rank, join date, project count
-  * Read "What I'm working on" and "About me"
+  * Read and update "What I'm working on" and "About me"
   * View avatar (directly or copy URL)
   * View and jump to featured project (including custom label, e.g. "Work in progress")
   * List and browse projects
