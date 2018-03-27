@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Not-so-powerful terminal client for Scratch community website",
   "main": "bin/scratch-client.js",
+  "bin": {
+    "scratch-client": "bin/scratch-client.js"
+  },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "command-exists": "^1.2.2",
