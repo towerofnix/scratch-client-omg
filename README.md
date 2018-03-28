@@ -46,7 +46,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * Read and update "What I'm working on" and "About me"
   * View avatar (directly or copy URL)
   * View and jump to featured project (including custom label, e.g. "Work in progress")
-  * List and browse projects
+  * List and browse shared and favorite projects, followed users and followers, followed and curated studios
   * Leave and view comments; delete any comments if on your own profile
 * Studios:
   * Read title, project count
