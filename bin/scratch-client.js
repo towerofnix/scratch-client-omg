@@ -4,6 +4,7 @@
 
 const readline = require('readline')
 const Scratch = require('scratch-api')
+const homepage = require('../lib/homepage')
 const messages = require('../lib/messages')
 const profiles = require('../lib/profiles')
 const projects = require('../lib/projects')
@@ -43,7 +44,7 @@ module.exports.main = async function() {
 
   if (process.argv[2] === 'messages') {
     await messages.browse({rl, us})
-  } else {
+  } else if (process.argv[2]) {
     const pageId = process.argv[2] || us.username
     const pageType = process.argv[3] || 'user'
     if (pageType === 'user') {
@@ -53,6 +54,8 @@ module.exports.main = async function() {
     } else if (pageType === 'studio') {
       await studios.browse({rl, us, id: pageId})
     }
+  } else {
+    await homepage.browse({rl, us})
   }
 
   rl.close()
