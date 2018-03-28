@@ -52,7 +52,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * Read title, project count
   * Read description
   * View thumbnail (directly or copy URL)
-  * View activity
+  * View activity (jump to actors, projects, comments, etc)
   * List and browse managers, curators, and projects
   * Leave and view comments; delete your own comments if you are a manager of the studio
 * Messages:
@@ -62,4 +62,5 @@ This client is definitely not a feature-complete clone of the Scratch web client
 * Comments, generally:
   * Read top-level comments and browse their replies
   * Send top-level comments and reply to existing comments
+  * View the selected comment's ID, and jump to a comment by its ID
   * Delete comments
