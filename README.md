@@ -52,6 +52,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * Read title, project count
   * Read description
   * View thumbnail (directly or copy URL)
+  * View activity
   * List and browse managers, curators, and projects
   * Leave and view comments; delete your own comments if you are a manager of the studio
 * Messages:
