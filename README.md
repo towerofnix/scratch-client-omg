@@ -39,6 +39,7 @@ This client is definitely not a feature-complete clone of the Scratch web client
   * View love-it and favorite counts
   * View thumbnail (directly or copy URL)
   * View project ID, which can be used alongside programs that don't use Flash, like [Scratch 3.0](https://llk.github.io/scratch-gui/) or [Phosphorus](https://phosphorus.github.io/)
+  * Browse studio list
   * Leave and view comments; delete any comments on your own project
 * User profiles:
   * Read username, location/country, rank, join date, project count
