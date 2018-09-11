@@ -36,6 +36,9 @@ module.exports.main = async function() {
     if (err.message === 'canceled') {
       console.log('')
       return
+    } else if (err.message.toLowerCase().startsWith('incorrect')) {
+      console.log('Sorry, that\'s not the right username or password. Re-run and try again?')
+      return
     } else {
       throw err
     }
