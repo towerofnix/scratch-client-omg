@@ -10,7 +10,8 @@
     "cheerio": "^1.0.0-rc.2",
     "command-exists": "^1.2.6",
     "node-fetch": "^1.7.3",
-    "scratch-api": "^1.1.8"
+    "scratch-api": "^1.1.8",
+    "word-wrap": "^1.2.3"
   },
   "devDependencies": {},
   "repository": {
